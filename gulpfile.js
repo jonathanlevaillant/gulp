@@ -1,66 +1,61 @@
-// requis
+// requires
 var gulp = require('gulp');
 
-// plugins
+// include plugins
 var plugins = require('gulp-load-plugins')();
 var gulpsync = require('gulp-sync')(gulp);
 var del = require('del');
 var critical = require('critical').stream;
 
-// variables de chemins
+// paths
 var source = './src/';
 var destination = './dist/';
-var sass = 'css/styles.scss';
-var css = 'css/*.css';
-var js = 'js/*.js';
 var html = '/**/*.html';
-var php = '/**/*.php';
-var font = 'fonts/**';
-var img = '/**/*.{png,jpg,jpeg,gif,svg}';
+var css = 'css/*.css';
+var scss = 'css/**/*.scss';
 var cssmin = 'css/styles.min.css';
+var js = 'js/*.js';
 var jsmin = 'js/global.min.js';
+var img = '/**/*.{png,jpg,jpeg,gif,svg}';
+var font = 'fonts/**';
 
-/* tâche "build" = "clean" + "css" + "html" + "php" + "js" + "img" + "font"
+/* task "build" = "clean" + "html" + "css" + "js" + "img" + "font"
    ========================================================================== */
 
-// tâche "clean" = del (destination)
+// task "clean" = del (destination)
 gulp.task('clean', function() {
     return del(destination);
 });
 
-// tâche "css" = sass + csscomb + autoprefixer + cssbeautify (source -> destination)
-gulp.task('css', function() {
-    return gulp.src(source + sass)
-        .pipe(plugins.sass())
-        .pipe(plugins.csscomb())
-        .pipe(plugins.autoprefixer())
-        .pipe(plugins.cssbeautify())
-        .pipe(gulp.dest(destination + 'css/'));
-});
-
-// tâche "html" = changed (source -> destination)
+// task "html" = changed (source -> destination)
 gulp.task('html', function() {
     return gulp.src(source + html)
         .pipe(plugins.changed(destination))
         .pipe(gulp.dest(destination))
 });
 
-// tâche "php" = changed (source -> destination)
-gulp.task('php', function() {
-    return gulp.src(source + php)
-        .pipe(plugins.changed(destination))
-        .pipe(gulp.dest(destination))
+// task "css" = sass + csscomb + autoprefixer + cssbeautify (source -> destination)
+gulp.task('css', function() {
+    return gulp.src(source + scss)
+        .pipe(plugins.sass({
+            errLogToConsole: true,
+            outputStyle: 'expanded'
+        })
+        .on('error', plugins.sass.logError))
+        .pipe(plugins.csscomb())
+        .pipe(plugins.autoprefixer())
+        .pipe(plugins.cssbeautify())
+        .pipe(gulp.dest(destination + 'css/'));
 });
 
-// tâche "js" = changed (source -> destination)
+// task "js" = changed (source -> destination)
 gulp.task('js', function() {
     return gulp.src(source + js)
         .pipe(plugins.changed(destination + 'js/'))
         .pipe(gulp.dest(destination + 'js/'))
 });
 
-// tâche "img" = imagemin (source -> destination)
-
+// task "img" = imagemin (source -> destination)
 gulp.task('img', function() {
     return gulp.src(source + img)
         .pipe(plugins.imagemin({
@@ -71,27 +66,26 @@ gulp.task('img', function() {
         .pipe(gulp.dest(destination));
 });
 
-// tâche "font" = (source -> destination)
+// task "font" = (source -> destination)
 gulp.task('font', function() {
     return gulp.src(source + font)
         .pipe(gulp.dest(destination + 'fonts/'))
 });
 
-// tâche "build"
-gulp.task('build', gulpsync.sync(['clean', ['css', 'html', 'php', 'js', 'img', 'font']]));
+// task "build"
+gulp.task('build', gulpsync.sync(['clean', ['html', 'css', 'js', 'img', 'font']]));
 
-/* tâche "prod" = "build" + "url" + "cssmin" + "jsmin" + "critical" + "htmlmin" + "cleancss" + "cleanjs"
+/* task "prod" = "build" + "url" + "cssmin" + "jsmin" + "critical" + "htmlmin" + "cleancss" + "cleanjs"
    ========================================================================== */
 
-// tâche "url" = useref (destination -> destination)
-
+// task "url" = useref (destination -> destination)
 gulp.task('url', function() {
-    return gulp.src([destination + html, destination + php])
+    return gulp.src(destination + html)
         .pipe(plugins.useref())
 		.pipe(gulp.dest(destination));
 });
 
-// tâche "cssmin" = uncss + csso (destination -> destination)
+// task "cssmin" = uncss + csso (destination -> destination)
 gulp.task('cssmin', function() {
     return gulp.src(destination + cssmin)
         .pipe(plugins.uncss({
@@ -101,7 +95,7 @@ gulp.task('cssmin', function() {
         .pipe(gulp.dest(destination + 'css/'));
 });
 
-// tâche "jsmin" = uglify (destination -> destination)
+// task "jsmin" = uglify (destination -> destination)
 gulp.task('jsmin', function() {
     return gulp.src(destination + jsmin)
         .pipe(plugins.uglify({
@@ -110,9 +104,9 @@ gulp.task('jsmin', function() {
         .pipe(gulp.dest(destination + 'js/'));
 });
 
-// tâche "critical" = critical (destination -> destination)
+// task "critical" = critical (destination -> destination)
 gulp.task('critical', function() {
-    return gulp.src([destination + html, destination + php])
+    return gulp.src(destination + html)
         .pipe(critical({
             base: destination,
             inline: true,
@@ -122,11 +116,11 @@ gulp.task('critical', function() {
         .pipe(gulp.dest(destination));
 });
 
-// tâche "htmlmin" = htmlmin (destination -> destination)
+// task "htmlmin" = htmlmin (destination -> destination)
 gulp.task('htmlmin', function() {
-    return gulp.src([destination + html, destination + php])
+    return gulp.src(destination + html)
         .pipe(plugins.htmlmin({
-            removeComments: true,
+			removeComments: true,
 			removeCommentsFromCDATA: true,
 			removeCDATASectionsFromCDATA: true,
 			collapseWhitespace: true,
@@ -144,29 +138,29 @@ gulp.task('htmlmin', function() {
         .pipe(gulp.dest(destination));
 });
 
-// tâche "cleancss" = del (destination -> destination)
+// task "cleancss" = del (destination -> destination)
 gulp.task('cleancss', function() {
     return del([destination + css, '!' + destination + cssmin]);
 });
 
-// tâche "cleanjs" = del (destination -> destination)
+// task "cleanjs" = del (destination -> destination)
 gulp.task('cleanjs', function() {
     return del([destination + js, '!' + destination + jsmin]);
 });
 
-// tâche "prod"
-gulp.task('prod', gulpsync.sync(['build', 'url', 'cssmin', 'jsmin', 'critical', 'htmlmin', 'cleancss', 'cleanjs']));
+// task "prod"
+gulp.task('prod', gulpsync.sync(['build', 'url', ['cssmin', 'jsmin'], 'critical', 'htmlmin', ['cleancss', 'cleanjs']]));
 
-/* tâche "watch" = "css" + "html, php" + "js"
+/* task "watch" = "css" + "html" + "js"
    ========================================================================== */
 
 gulp.task('watch', function() {
-    gulp.watch(source + 'css/*.scss', ['css']);
-    gulp.watch([source + html, source + php], ['html', 'php']);
+    gulp.watch(source + scss, ['css']);
+    gulp.watch(source + html, ['html']);
     gulp.watch(source + js, ['js']);
 });
 
-/* tâche "default" = "build"
+/* task "default" = "build"
    ========================================================================== */
 
 gulp.task('default', ['build']);
